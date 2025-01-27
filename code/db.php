@@ -12,6 +12,3 @@ try {
 }
 ?>
 
-
-<!-- sudo mysql -u root -->
-<!-- sudo mysqladmin reload -->

@@ -1,16 +1,39 @@
 <?php
 include 'db.php';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $_POST['username'];
-    $email = $_POST['email'];
-    $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
+$to = $email;
+$subject = 'Confirmation register';
+$message = 'Ceci est un email de test envoyé via la fonction mail() de PHP.';
+$headers = 'From: ' . "\r\n" .
+           'Reply-To: expéditeur@example.com' . "\r\n" .
+           'X-Mailer: PHP/' . phpversion();
 
-    $stmt = $pdo->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-    $stmt->execute([$username, $email, $password]);
+// Récupération des données du formulaire
+$username = $_POST['username'];
+$email = $_POST['email'];
+$password = password_hash($_POST['password'], PASSWORD_BCRYPT);
 
-    header("Location: login.php");
-    exit();
+// Génération d'un token de confirmation
+$confirmation_token = bin2hex(random_bytes(32));
+
+// Insertion des données dans la base de données
+try {
+    $stmt = $pdo->prepare("INSERT INTO users (username, email, password, confirmation_token) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$username, $email, $password, $confirmation_token]);
+} catch (PDOException $e) {
+    die("Erreur lors de l'inscription : " . $e->getMessage());
+}
+
+// Envoi de l'e-mail de confirmation
+$confirmation_link = "http://votresite.com/confirm.php?token=$confirmation_token";
+$subject = "Confirmation de votre compte";
+$message = "Cliquez sur ce lien pour confirmer votre compte : $confirmation_link";
+$headers = "From: pro.baptisteeuw@gmail.com";
+
+if (mail($email, $subject, $message, $headers)) {
+    echo "Un e-mail de confirmation a été envoyé à $email.";
+} else {
+    echo "Erreur lors de l'envoi de l'e-mail de confirmation.";
 }
 ?>
 
@@ -23,16 +46,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 <body>
     <h1>Inscription</h1>
-    <form method="POST">
-        <label for="username">Nom d'utilisateur :</label>
-        <input type="text" id="username" name="username" required>
-        <br>
-        <label for="email">Email :</label>
-        <input type="email" id="email" name="email" required>
-        <br>
-        <label for="password">Mot de passe :</label>
-        <input type="password" id="password" name="password" required>
-        <br>
+    <form action="register.php" method="POST">
+        <input type="text" name="username" placeholder="Nom d'utilisateur" required>
+        <input type="email" name="email" placeholder="Adresse e-mail" required>
+        <input type="password" name="password" placeholder="Mot de passe" required>
         <button type="submit">S'inscrire</button>
     </form>
     <p>Déjà inscrit ? <a href="login.php">Connectez-vous ici</a>.</p>
